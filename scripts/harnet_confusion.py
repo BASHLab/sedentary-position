@@ -51,6 +51,8 @@ from sklearn.metrics import (accuracy_score, cohen_kappa_score, confusion_matrix
 
 PROJ = Path("/work/hdd/bebr/Projects/IMU_pretraining")
 OUT_DIR = PROJ / "analysis" / "posture"
+# Tables live with the analysis; every figure in the project goes to figures/.
+FIG_DIR = PROJ / "figures"
 MODES = ("probe", "full")
 
 # ---------------------------------------------------------------- design tokens
@@ -180,7 +182,7 @@ def fig_confusion_by_fold(cm_pct: dict[int, np.ndarray], support: dict[int, np.n
              "was held out. Rows sum to 100%; blank cells are <0.5%.",
              color=INK_MUTED, fontsize=9, ha="left")
     fig.tight_layout(rect=(0, 0.018, 1, 0.972))
-    fig.savefig(OUT_DIR / f"harnet10_confusion_{mode}_by_fold.png", dpi=200,
+    fig.savefig(FIG_DIR / f"harnet10_confusion_{mode}_by_fold.png", dpi=200,
                 facecolor=SURFACE)
     plt.close(fig)
 
@@ -280,13 +282,14 @@ def fig_f1_vs_kappa(per_class: pd.DataFrame, pooled: dict, folds: pd.DataFrame,
              f"windows). macro-F1 spends a seventh of its budget on each of crawl (1.1% "
              f"of windows) and stand (8.2%), which are the two the model cannot do.",
              color=INK_2, fontsize=10, ha="left", va="top", linespacing=1.5)
-    fig.savefig(OUT_DIR / f"harnet10_f1_vs_kappa_{mode}.png", dpi=200,
+    fig.savefig(FIG_DIR / f"harnet10_f1_vs_kappa_{mode}.png", dpi=200,
                 facecolor=SURFACE)
     plt.close(fig)
 
 
 # ---------------------------------------------------------------------- main
 def main() -> None:
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
     md = pd.read_parquet(OUT_DIR / "windows_raw_30hz_meta.parquet")
     classes = sorted(md["posture"].unique())
     labels = np.arange(len(classes))
@@ -402,8 +405,9 @@ def main() -> None:
     pd.DataFrame(pc_rows).to_csv(OUT_DIR / "harnet10_per_class_by_fold.csv", index=False)
     pd.concat([pd.DataFrame(fold_rows), pd.DataFrame(pooled_rows)], ignore_index=True) \
         .to_csv(OUT_DIR / "harnet10_f1_vs_kappa.csv", index=False)
-    print(f"\nWrote harnet10_confusion_by_fold.csv, harnet10_per_class_by_fold.csv, "
-          f"harnet10_f1_vs_kappa.csv and 4 figures to {OUT_DIR}")
+    print(f"\nWrote harnet10_confusion_by_fold.csv, harnet10_per_class_by_fold.csv "
+          f"and harnet10_f1_vs_kappa.csv to {OUT_DIR}")
+    print(f"Wrote 4 figures to {FIG_DIR}")
 
 
 if __name__ == "__main__":

@@ -44,6 +44,8 @@ from sklearn.preprocessing import StandardScaler
 PROJ = Path("/work/hdd/bebr/Projects/IMU_pretraining")
 LB_DIR = Path("/work/hdd/bebr/Data/LB/cleaned/BRP1")
 OUT_DIR = PROJ / "analysis" / "posture"
+# Tables live with the analysis; every figure in the project goes to figures/.
+FIG_DIR = PROJ / "figures"
 CACHE = OUT_DIR / "windows_10s.parquet"
 
 FS = 70.0
@@ -236,12 +238,13 @@ def fig_confusion(cmn: np.ndarray, classes: list[str], title: str) -> None:
     fig.text(0.008, 0.008, "row-normalised %, leave-one-subject-out",
              color="#8a8985", fontsize=8.5)
     fig.tight_layout(rect=(0, 0.03, 1, 1))
-    fig.savefig(OUT_DIR / "baseline_confusion.png", dpi=200, facecolor=SURFACE)
+    fig.savefig(FIG_DIR / "baseline_confusion.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
 
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
 
     if CACHE.exists() and "--rebuild" not in sys.argv:
         df = pd.read_parquet(CACHE)

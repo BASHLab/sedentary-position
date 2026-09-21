@@ -12,7 +12,7 @@ recording. BRP1_EMAfiles_ToneTimes_tracking.xlsx carries that offset
 (LBoffset_tonetime_secs) per (family_id, EMA_obs_number), so a posture segment
 is only mappable onto the IMU stream when the offset is known.
 
-Outputs CSV tables + figures under analysis/posture/.
+Outputs CSV tables under analysis/posture/ and figures under figures/.
 """
 
 from __future__ import annotations
@@ -33,6 +33,8 @@ TRACKING_XLSX = Path(
     "/work/hdd/bebr/Projects/IMU_pretraining/BRP1_EMAfiles_ToneTimes_tracking.xlsx"
 )
 OUT_DIR = Path("/work/hdd/bebr/Projects/IMU_pretraining/analysis/posture")
+# Tables live with the analysis; every figure in the project goes to figures/.
+FIG_DIR = Path("/work/hdd/bebr/Projects/IMU_pretraining/figures")
 
 COLUMNS = [
     "tier",
@@ -171,7 +173,7 @@ def fig_by_class(by_class: pd.DataFrame, total_h: float) -> None:
              f"{int(by_class['n_segments'].sum())} segments",
              color=INK_MUTED, fontsize=8.5, ha="left")
     fig.tight_layout(rect=(0, 0.03, 1, 1))
-    fig.savefig(OUT_DIR / "posture_by_class.png", dpi=200, facecolor=SURFACE)
+    fig.savefig(FIG_DIR / "posture_by_class.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
 
@@ -211,7 +213,7 @@ def fig_by_subject(matrix: pd.DataFrame, order: list[str]) -> None:
     ax.set_title("Posture composition by subject", color=INK, fontsize=13,
                  fontweight="bold", loc="left", pad=14)
     fig.tight_layout(rect=(0, 0.02, 1, 1))
-    fig.savefig(OUT_DIR / "posture_by_subject.png", dpi=200, facecolor=SURFACE)
+    fig.savefig(FIG_DIR / "posture_by_subject.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
 
@@ -247,13 +249,14 @@ def fig_segment_durations(seg: pd.DataFrame, order: list[str]) -> None:
     ax.set_title("Posture segment length (boxes: IQR, whiskers: 1.5×IQR, outliers hidden)",
                  color=INK, fontsize=12.5, fontweight="bold", loc="left", pad=14)
     fig.tight_layout(rect=(0, 0, 0.80, 1))
-    fig.savefig(OUT_DIR / "posture_segment_durations.png", dpi=200, facecolor=SURFACE)
+    fig.savefig(FIG_DIR / "posture_segment_durations.png", dpi=200, facecolor=SURFACE)
     plt.close(fig)
 
 
 # ------------------------------------------------------------------------ main
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    FIG_DIR.mkdir(parents=True, exist_ok=True)
 
     print("Loading annotations …")
     ann = load_annotations()
@@ -393,7 +396,7 @@ def main() -> None:
     print(f"No annotations (no video to correct against): {ids_missing}")
     print("\nPer-subject coverage:")
     print(cov.to_string(index=False, float_format=lambda v: f"{v:.2f}"))
-    print(f"\nWrote tables + figures to {OUT_DIR}")
+    print(f"\nWrote tables to {OUT_DIR}, figures to {FIG_DIR}")
 
 
 if __name__ == "__main__":

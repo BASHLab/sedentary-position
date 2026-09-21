@@ -22,10 +22,10 @@ analysis/posture/windows_raw_30hz.npy
 analysis/posture/windows_raw_30hz_meta.parquet
 analysis/posture/windows_10s.parquet
 
-# Everything else under analysis/ is a result -- the CSV tables and the PNG
-# figures the README and docs/METHODS.md refer to -- and IS tracked, including
-# harnet10_*_predictions.npy (385 KB each), which let the confusion analysis
-# rerun on CPU without repeating the GPU fine-tune.
+# Everything else under analysis/ is a result -- the CSV tables the README and
+# docs/METHODS.md refer to -- and IS tracked, including harnet10_*_predictions.npy
+# (385 KB each), which let the confusion analysis rerun on CPU without repeating
+# the GPU fine-tune. figures/ holds every PNG in the project and is tracked too.
 
 # Scratch ------------------------------------------------------------------
 scratch/

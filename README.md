@@ -30,18 +30,21 @@ Two tier-name quirks are normalised in the loader: `position` is used instead of
 `BRP1_25003_Obs12A`. Labels are whitespace-stripped and lowercased (the raw files
 carry trailing-space variants such as `"sit "`, `"crawl  "`).
 
-### Outputs — `analysis/posture/`
+### Outputs
+
+Tables go to `analysis/posture/`; **every figure in the project goes to
+`figures/`.**
 
 | File | Contents |
 |---|---|
-| `posture_segments.csv` | every posture segment + LB-clock times + alignability |
-| `posture_by_class.csv` | per-class counts, duration, share, segment stats |
-| `posture_by_subject_seconds.csv` | subject × class duration matrix |
-| `posture_by_observation.csv` | per-observation coverage + IMU linkage |
-| `annotation_coverage.csv` | recordings vs. annotations per subject |
-| `posture_by_class.png` | ranked duration per class |
-| `posture_by_subject.png` | per-subject composition (100% stacked) |
-| `posture_segment_durations.png` | segment-length spread per class |
+| `analysis/posture/posture_segments.csv` | every posture segment + LB-clock times + alignability |
+| `analysis/posture/posture_by_class.csv` | per-class counts, duration, share, segment stats |
+| `analysis/posture/posture_by_subject_seconds.csv` | subject × class duration matrix |
+| `analysis/posture/posture_by_observation.csv` | per-observation coverage + IMU linkage |
+| `analysis/posture/annotation_coverage.csv` | recordings vs. annotations per subject |
+| `figures/posture_by_class.png` | ranked duration per class |
+| `figures/posture_by_subject.png` | per-subject composition (100% stacked) |
+| `figures/posture_segment_durations.png` | segment-length spread per class |
 
 ## Documentation
 
@@ -77,8 +80,9 @@ Per-class F1: on stomach 0.97, on back 0.94, recline back 0.91, on side 0.88 —
 then **sit 0.63, stand 0.46, crawl 0.32**. Lying postures are solved by trunk
 orientation alone; all remaining headroom is in upright/transitional classes.
 
-Outputs: `windows_10s.parquet` (feature cache), `baseline_loso_results.csv`,
-`baseline_confusion.csv`, `baseline_confusion.png`.
+Outputs: `analysis/posture/` — `windows_10s.parquet` (feature cache),
+`baseline_loso_results.csv`, `baseline_confusion.csv`;
+`figures/baseline_confusion.png`.
 
 ## harnet10 — per-fold confusion and the macro-F1 / κ gap
 
@@ -91,11 +95,11 @@ re-trained and no GPU is needed.
 
 | File | Contents |
 |---|---|
-| `harnet10_confusion_{probe,full}_by_fold.png` | 6 row-normalised confusion matrices, one per held-out infant |
-| `harnet10_confusion_by_fold.csv` | the same matrices long-form: `model, held_out, coded, predicted, n, row_pct` |
-| `harnet10_per_class_by_fold.csv` | precision / recall / F1 / support per class per fold |
-| `harnet10_f1_vs_kappa_{probe,full}.png` | where macro-F1 loses its points, and the per-fold divisor effect |
-| `harnet10_f1_vs_kappa.csv` | accuracy, p_e, κ and **three** macro-F1 divisors per fold |
+| `figures/harnet10_confusion_{probe,full}_by_fold.png` | 6 row-normalised confusion matrices, one per held-out infant |
+| `analysis/posture/harnet10_confusion_by_fold.csv` | the same matrices long-form: `model, held_out, coded, predicted, n, row_pct` |
+| `analysis/posture/harnet10_per_class_by_fold.csv` | precision / recall / F1 / support per class per fold |
+| `figures/harnet10_f1_vs_kappa_{probe,full}.png` | where macro-F1 loses its points, and the per-fold divisor effect |
+| `analysis/posture/harnet10_f1_vs_kappa.csv` | accuracy, p_e, κ and **three** macro-F1 divisors per fold |
 
 Two things come out of it:
 
