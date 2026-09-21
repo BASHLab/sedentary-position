@@ -1,0 +1,20 @@
+feature,feature_set,group,units,definition,rationale,in_set_A,in_set_B,in_set_C
+grav_x,A,orientation,unit,x of unit-normalised mean accel vector,trunk direction in sensor frame,True,True,True
+grav_y,A,orientation,unit,y of unit-normalised mean accel vector,trunk direction in sensor frame,True,True,True
+grav_z,A,orientation,unit,z of unit-normalised mean accel vector,trunk direction in sensor frame,True,True,True
+amag_mean,B,accel,m/s^2,mean of per-sample ||acc||,~9.81 at rest; departs under acceleration,False,True,True
+amag_std,B,accel,m/s^2,SD of per-sample ||acc||,overall movement intensity,False,True,True
+amean_norm,B,accel,m/s^2,||mean acc|| before normalising,"stillness: ~9.81 if orientation held, ->0 if it changed mid-window",False,True,True
+ax_std,B,accel,m/s^2,SD of accel x,per-axis movement intensity,False,True,True
+ay_std,B,accel,m/s^2,SD of accel y,per-axis movement intensity,False,True,True
+az_std,B,accel,m/s^2,SD of accel z,per-axis movement intensity,False,True,True
+amag_jerk,B,accel,m/s^3*dt,mean |first difference| of ||acc||,high-frequency jitter vs smooth motion,False,True,True
+amag_ptp,B,accel,m/s^2,max-min of ||acc||,single impacts an SD would average away,False,True,True
+gmag_mean,C,gyro,deg/s,mean of per-sample ||gyr||,overall rotation rate,False,False,True
+gmag_std,C,gyro,deg/s,SD of per-sample ||gyr||,rotation variability,False,False,True
+gmag_max,C,gyro,deg/s,max of per-sample ||gyr||,peak rotation,False,False,True
+gx_absmean,C,gyro,deg/s,mean |gyr x|,which rotation axis dominates,False,False,True
+gy_absmean,C,gyro,deg/s,mean |gyr y|,which rotation axis dominates,False,False,True
+gz_absmean,C,gyro,deg/s,mean |gyr z|,which rotation axis dominates,False,False,True
+gx_std,C,gyro,deg/s,SD of gyr x,per-axis rate variability,False,False,True
+gy_std,C,gyro,deg/s,SD of gyr y,per-axis rate variability; NOTE gz_std is absent (arbitrary [:2] truncation),False,False,True

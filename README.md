@@ -80,6 +80,36 @@ orientation alone; all remaining headroom is in upright/transitional classes.
 Outputs: `windows_10s.parquet` (feature cache), `baseline_loso_results.csv`,
 `baseline_confusion.csv`, `baseline_confusion.png`.
 
+## harnet10 — per-fold confusion and the macro-F1 / κ gap
+
+```bash
+sbatch slurm/harnet_confusion.sbatch          # ~1 min, CPU only
+```
+
+Derives everything from the saved out-of-fold predictions, so nothing is
+re-trained and no GPU is needed.
+
+| File | Contents |
+|---|---|
+| `harnet10_confusion_{probe,full}_by_fold.png` | 6 row-normalised confusion matrices, one per held-out infant |
+| `harnet10_confusion_by_fold.csv` | the same matrices long-form: `model, held_out, coded, predicted, n, row_pct` |
+| `harnet10_per_class_by_fold.csv` | precision / recall / F1 / support per class per fold |
+| `harnet10_f1_vs_kappa_{probe,full}.png` | where macro-F1 loses its points, and the per-fold divisor effect |
+| `harnet10_f1_vs_kappa.csv` | accuracy, p_e, κ and **three** macro-F1 divisors per fold |
+
+Two things come out of it:
+
+- **macro-F1 (0.751) < κ (0.824) is a weighting difference, not a contradiction.**
+  κ is chance-corrected accuracy (p_e = 0.205), and accuracy is carried by the
+  three lying postures — 72.4% of windows at mean F1 0.943. macro-F1 gives
+  `crawl` (1.1%, F1 0.46) and `stand` (8.2%, F1 0.41) a seventh each. The same
+  seven per-class F1s average to 0.751 flat and 0.854 by support.
+- **The per-fold macro-F1 column understates three of six folds.** `crawl` is
+  absent in 25003, 25007 and 25008, but the model predicts it, so sklearn's
+  default macro divisor is 7 while those infants only have 6 classes. Using the
+  right divisor moves them +0.107 to +0.113. Pooled numbers are unaffected.
+  See `docs/METHODS.md` → *Why macro-F1 always lands below κ*.
+
 ### Known alignment problems
 
 Nine observations run past the end of their LB recording. Seven overrun by

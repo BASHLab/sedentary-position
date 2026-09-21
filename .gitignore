@@ -1,0 +1,44 @@
+# Environment -------------------------------------------------------------
+# .venv is built against the lmod python module (see env.sh) and is not
+# portable off Delta; rebuild it from requirements.lock.txt instead.
+.venv/
+
+# Caches redirected here by env.sh to keep them off the small $HOME quota.
+.cache/
+__pycache__/
+*.py[cod]
+
+# SLURM ------------------------------------------------------------------
+# .sbatch scripts are tracked; the job output they produce is not.
+slurm/logs/
+*.out
+*.err
+
+# Derived arrays ----------------------------------------------------------
+# Regenerable caches, too large to version. Both are rebuilt by
+#   sbatch slurm/build_raw_windows.sbatch      -> windows_raw_30hz.*
+#   python scripts/posture_baseline.py --rebuild -> windows_10s.parquet
+analysis/posture/windows_raw_30hz.npy
+analysis/posture/windows_raw_30hz_meta.parquet
+analysis/posture/windows_10s.parquet
+
+# Everything else under analysis/ is a result -- the CSV tables and the PNG
+# figures the README and docs/METHODS.md refer to -- and IS tracked, including
+# harnet10_*_predictions.npy (385 KB each), which let the confusion analysis
+# rerun on CPU without repeating the GPU fine-tune.
+
+# Scratch ------------------------------------------------------------------
+scratch/
+tmp/
+*.tmp
+*.bak
+*~
+.ipynb_checkpoints/
+core
+core.[0-9]*
+
+# Editors / OS -------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+*.swp
