@@ -1,23 +1,5 @@
 # IMU_pretraining
 
-## Environment
-
-Built on NCSA Delta. The venv sits on the system Python module, so **the module
-must be loaded before the venv is activated** — `env.sh` does both:
-
-```bash
-source /work/hdd/bebr/Projects/IMU_pretraining/env.sh
-```
-
-- base: `python/3.13.5-gcc13.3.1` (lmod) → `.venv/`
-- `requirements.txt` = direct deps; `requirements.lock.txt` = full `pip freeze`
-- caches (pip / HF / torch / matplotlib) are redirected to `.cache/` under the
-  project, not `$HOME`
-- PyTorch is **not** installed yet. When you need it:
-  `pip install torch --index-url https://download.pytorch.org/whl/cu128`
-
-SLURM accounts: `bebr-delta-cpu` (CPU partitions), `bebr-delta-gpu` (GPU).
-
 ## Posture distribution
 
 ```bash
