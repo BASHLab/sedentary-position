@@ -6,3 +6,4 @@ scipy
 pyarrow
 tqdm
 ipykernel
+soundfile

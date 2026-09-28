@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
-"""Raw 10 s IMU windows, resampled to 30 Hz, for deep models.
+"""Raw 10 s IMU windows at a pretrained encoder's native rate.
 
 `windows_10s.parquet` holds only the 19 summary features, which is all the GBDT
 baseline needed. A pretrained encoder needs the waveform, so this re-runs the
 identical windowing and keeps the signal.
 
-Output is shaped for Oxford ssl-wearables / harnet10:
-  - 30 Hz (harnet's pretraining rate), 10 s -> 300 samples
-  - accelerometer in **g** (harnet's unit), not m/s^2
-  - gyro carried along at the same rate for models that can use it
+    python build_raw_windows.py --fs-out 30   # harnet10   -> (N, 6, 300)
+    python build_raw_windows.py --fs-out 80   # LIMU-BERT  -> (N, 6, 800)
 
-The window selection is asserted identical to windows_10s.parquet, so the deep
-model and the GBDT baseline are scored on exactly the same rows.
+Every encoder is fed at the rate it was pretrained at rather than being asked to
+generalise across a sample-rate shift, and 70 Hz resamples to both exactly
+(x3/7 and x8/7), so no interpolation artefacts are introduced. Channel layout
+and units are the same either way:
+  - 0-2 accelerometer in **g**, not m/s^2
+  - 3-5 gyro in deg/s
+  - magnetometer deliberately dropped (see docs/METHODS.md)
+
+The window selection is asserted identical to windows_10s.parquet, so every
+model in this project is scored on exactly the same rows in the same order.
 """
 
 from __future__ import annotations
 
 import time
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -27,14 +34,16 @@ PROJ = Path("/work/hdd/bebr/Projects/IMU_pretraining")
 LB_DIR = Path("/work/hdd/bebr/Data/LB/cleaned/BRP1")
 OUT_DIR = PROJ / "analysis" / "posture"
 
-FS_IN, FS_OUT = 70.0, 30.0
-UP, DOWN = 3, 7  # 70 * 3/7 = 30 exactly
+FS_IN = 70.0
+# Output rates the encoders want, each an exact rational resample of 70 Hz:
+#   30 -> harnet10 (Oxford ssl-wearables pretraining rate)
+#   80 -> LIMU-BERT lb_80_240 (Infant_states_and_RSA pretraining rate)
+RATES = {30: (3, 7), 80: (8, 7)}
 WIN_S, HOP_S, MIN_PURITY = 10.0, 5.0, 0.80
 DROP_CLASSES = {"recline forward"}
 G = 9.80665
 
 WIN_IN = int(WIN_S * FS_IN)    # 700
-WIN_OUT = int(WIN_S * FS_OUT)  # 300
 
 
 def session_index() -> dict[str, Path]:
@@ -47,6 +56,25 @@ def session_index() -> dict[str, Path]:
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--fs-out", type=int, default=30, choices=sorted(RATES),
+                    help="output sample rate; names the output files")
+    ap.add_argument("--all-channels", action="store_true",
+                    help="keep all 9 channels in raw order (accel, mag, gyro) "
+                         "instead of the 6-channel accel+gyro default. The "
+                         "magnetometer is excluded from every model in this "
+                         "project (docs/METHODS.md); it is carried here only so "
+                         "an encoder pretrained on accel+mag can be fed the "
+                         "channels it actually saw.")
+    args = ap.parse_args()
+    fs_out = args.fs_out
+    up, down = RATES[fs_out]
+    win_out = int(WIN_S * fs_out)
+    n_ch = 9 if args.all_channels else 6
+    tag = f"windows_raw_{fs_out}hz" + ("_9ch" if args.all_channels else "")
+    print(f"{FS_IN:.0f} Hz -> {fs_out} Hz (x{up}/{down}), "
+          f"{WIN_S:.0f} s windows = {win_out} samples -> {tag}.npy")
+
     seg = pd.read_csv(OUT_DIR / "posture_segments.csv")
     seg = seg[seg["imu_alignable"] & ~seg["posture"].isin(DROP_CLASSES)]
     sessions = session_index()
@@ -73,8 +101,9 @@ def main() -> None:
             if i1 > i0:
                 labels[i0:i1] = cls_idx[r["posture"]]
 
-        # accel -> g, gyro left in deg/s; magnetometer (3:6) deliberately unused
-        sig = np.vstack([imu[0:3] / G, imu[6:9]]).astype(np.float64)
+        # accel -> g always; magnetometer (raw 3:6) only when asked for
+        sig = (np.vstack([imu[0:3] / G, imu[3:6], imu[6:9]]) if n_ch == 9
+               else np.vstack([imu[0:3] / G, imu[6:9]])).astype(np.float64)
 
         for start in range(0, n - WIN_IN + 1, hop_n):
             lab = labels[start:start + WIN_IN]
@@ -84,7 +113,7 @@ def main() -> None:
             vals, counts = np.unique(coded, return_counts=True)
             if counts.max() < WIN_IN * MIN_PURITY:
                 continue
-            w = resample_poly(sig[:, start:start + WIN_IN], UP, DOWN, axis=1)
+            w = resample_poly(sig[:, start:start + WIN_IN], up, down, axis=1)
             X.append(w.astype(np.float32))
             meta.append((fid, obs, lb_session, start / FS_IN,
                          classes[vals[counts.argmax()]]))
@@ -96,7 +125,7 @@ def main() -> None:
     X = np.stack(X)
     md = pd.DataFrame(meta, columns=["family_id", "obs", "lb_session",
                                      "t_start_s", "posture"])
-    assert X.shape[1:] == (6, WIN_OUT), X.shape
+    assert X.shape[1:] == (n_ch, win_out), X.shape
 
     # Same rows, same order as the feature table the GBDT baseline used.
     ref = pd.read_parquet(OUT_DIR / "windows_10s.parquet")
@@ -105,11 +134,12 @@ def main() -> None:
                                   ref[cols].reset_index(drop=True))
     print(f"\nwindow selection identical to windows_10s.parquet ({len(md)} rows)")
 
-    np.save(OUT_DIR / "windows_raw_30hz.npy", X)
-    md.to_parquet(OUT_DIR / "windows_raw_30hz_meta.parquet", index=False)
+    np.save(OUT_DIR / f"{tag}.npy", X)
+    md.to_parquet(OUT_DIR / f"{tag}_meta.parquet", index=False)
     print(f"X {X.shape} float32 = {X.nbytes / 1e6:.0f} MB "
-          f"-> windows_raw_30hz.npy")
-    print("channels: 0-2 accel (g), 3-5 gyro (deg/s)")
+          f"-> {tag}.npy")
+    print("channels: " + ("0-2 accel (g), 3-5 magnetometer, 6-8 gyro (deg/s)"
+                          if n_ch == 9 else "0-2 accel (g), 3-5 gyro (deg/s)"))
     acc = X[:, :3]
     print(f"accel g:  mean |a| = {np.linalg.norm(acc, axis=1).mean():.3f} "
           f"(expect ~1.0)   range [{acc.min():.2f}, {acc.max():.2f}]")

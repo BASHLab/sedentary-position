@@ -8,26 +8,41 @@
 __pycache__/
 *.py[cod]
 
-# SLURM ------------------------------------------------------------------
-# .sbatch scripts are tracked; the job output they produce is not.
-slurm/logs/
+# SLURM ---------------------------------------------------------------------
+# The whole directory: .sbatch wrappers are two-line shims around
+# `srun python scripts/<x>.py`, regenerable from the script they call, and the
+# logs are per-job noise. Every command that matters is in the README.
+slurm/
 *.out
 *.err
 
-# Derived arrays ----------------------------------------------------------
-# Regenerable caches, too large to version. Both are rebuilt by
-#   sbatch slurm/build_raw_windows.sbatch      -> windows_raw_30hz.*
-#   python scripts/posture_baseline.py --rebuild -> windows_10s.parquet
-analysis/posture/windows_raw_30hz.npy
-analysis/posture/windows_raw_30hz_meta.parquet
+# Derived arrays ------------------------------------------------------------
+# Deny .npy under analysis/ by default and allow back only what is small and
+# expensive to recreate. Stated as a pattern rather than a filename list
+# because the cache set keeps growing -- windows_raw_80hz_9ch.npy (1.4 GB) and
+# ecg_cache_beats.npy (6.1 GB) both appeared after the filename-by-filename
+# version of this file was written, and neither was caught.
+analysis/**/*.npy
 analysis/posture/windows_10s.parquet
 
-# Everything else under analysis/ is a result -- the CSV tables the README and
-# docs/METHODS.md refer to -- and IS tracked, including harnet10_*_predictions.npy
-# (385 KB each), which let the confusion analysis rerun on CPU without repeating
-# the GPU fine-tune. figures/ holds every PNG in the project and is tracked too.
+# ...but keep the model predictions: ~385 KB each, one row per window, and they
+# are what lets the metric tables and the tummy-time joins be rebuilt on CPU
+# without repeating a GPU fine-tune (see scripts/metrics_from_predictions.py).
+!analysis/**/*_predictions.npy
 
-# Scratch ------------------------------------------------------------------
+# Everything else under analysis/ is tracked: the CSV tables the README and
+# docs/ refer to, and the small *_meta.parquet window indexes (61 KB) that the
+# analyses key off -- keeping those means tummy_time.py and the metric scripts
+# run from a fresh clone without first rebuilding a 1.4 GB array.
+# figures/ holds every PNG in the project and is tracked in full.
+
+# Regenerate the ignored arrays with:
+#   sbatch slurm/build_raw_windows.sbatch --fs-out 30
+#   sbatch slurm/build_raw_windows.sbatch --fs-out 80 --all-channels
+#   sbatch slurm/ecg_features_cache.sbatch
+#   python  scripts/posture_baseline.py --rebuild     # windows_10s.parquet
+
+# Scratch -------------------------------------------------------------------
 scratch/
 tmp/
 *.tmp
@@ -37,8 +52,11 @@ tmp/
 core
 core.[0-9]*
 
-# Editors / OS -------------------------------------------------------------
+# Editors / OS --------------------------------------------------------------
 .vscode/
 .idea/
 .DS_Store
 *.swp
+
+# Smoke-test artefact from a 2-recording ECG run; superseded by the full file.
+analysis/posture/ecg_sleep_predictions_smoke.parquet

@@ -46,8 +46,33 @@ Tables go to `analysis/posture/`; **every figure in the project goes to
 | `figures/posture_by_subject.png` | per-subject composition (100% stacked) |
 | `figures/posture_segment_durations.png` | segment-length spread per class |
 
+## Tummy time — awake AND on stomach
+
+```bash
+sbatch slurm/ecg_sleep_infer.sbatch      # ECG sleep/wake per window, ~27 min GPU
+sbatch slurm/tummy_time.sbatch           # combine with harnet10 posture
+sbatch slurm/tummy_time_metrics.sbatch   # metrics by pipeline / scope / infant
+sbatch slurm/tummy_time_confusion.sbatch # confusion matrices + kappa figure
+```
+
+Posture from harnet10 (leave-one-subject-out out-of-fold), wake/sleep from the
+infant ECG foundation model in `/work/nvme/bebr/mkhan14/ecg_foundation_model`,
+combined as a hard AND on the shared 10 s window grid.
+
+**11.90 h of tummy time in 66.85 h of coded recording (17.8%)**, 1.15 h (25006)
+to 4.14 h (25008) per infant. Fully automated — no human coding anywhere — it
+recovers 10.57 h against a 10.36 h reference on the windows where ECG exists:
+**F1 0.954, kappa 0.943**; on the one held-out infant, kappa 0.979.
+
+Caveats that bound that claim: the ECG model trained on 25003–25006 and
+validated on 25008, 25007 has no ECG recording at all, and the pipeline
+over-reports by ~2% because the ECG model over-calls wake (sleep recall 0.612
+out of sample). See **`docs/TUMMY_TIME.md`** for the method and the numbers.
+
 ## Documentation
 
+- **`docs/TUMMY_TIME.md`** — tummy-time method: the two models, how they are
+  merged, per-infant results and limitations.
 - **`docs/METHODS.md`** — dataset description, all 19 features, the 5 models,
   and the evaluation protocol, in prose.
 - **`analysis/posture/feature_dictionary.csv`** — the same feature table,
